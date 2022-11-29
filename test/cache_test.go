@@ -47,8 +47,6 @@ func Test_Add(t *testing.T) {
 	cache := cache.New(5)
 	cache.Add("test", 1)
 	cache.Add("test", 2)
-	cache.Add("test1", 2)
-	cache.Add("test2", 2)
 
 	val, err := cache.Get("test")
 	assert.Nil(t, err)
