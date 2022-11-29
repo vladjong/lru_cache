@@ -1,7 +1,9 @@
 package cache
 
-type Cache interface {
-	Add(key string, value interface{}) error
-	Get(key string) (interface{}, error)
-	Delete(key string) error
+type ICache interface {
+	Add(key, value interface{}) error
+	Get(key interface{}) (interface{}, error)
+	Remove(key interface{}) error
+	Cap() int
+	Clear()
 }
