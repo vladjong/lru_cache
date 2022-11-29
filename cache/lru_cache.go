@@ -21,14 +21,16 @@ type lruCache struct {
 	storage  map[interface{}]*list.Element
 	queue    *list.List
 	capacity int
+	size     int
 	mx       sync.RWMutex
 }
 
-func New(capacity int) *lruCache {
+func New(size int) *lruCache {
 	return &lruCache{
-		storage:  make(map[interface{}]*list.Element, capacity),
+		storage:  make(map[interface{}]*list.Element, size),
 		queue:    list.New(),
-		capacity: capacity,
+		capacity: 0,
+		size:     size,
 	}
 }
 
@@ -37,10 +39,12 @@ func (l *lruCache) Add(key, value interface{}) error {
 	defer l.mx.Unlock()
 	node := NewNode(key, value)
 	if node, ok := l.storage[key]; ok {
+		node.Value.(*Node).Value = value
 		l.queue.MoveToFront(node)
+		l.storage[key] = node
 		return nil
 	}
-	if l.queue.Len() == l.capacity {
+	if l.queue.Len() == l.size {
 		if node := l.queue.Back(); node != nil {
 			l.queue.Remove(node)
 			delete(l.storage, node.Value.(*Node).Key)
@@ -48,6 +52,7 @@ func (l *lruCache) Add(key, value interface{}) error {
 			return ErrQueueEmpty
 		}
 	}
+	l.capacity += 1
 	element := l.queue.PushFront(node)
 	l.storage[key] = element
 	return nil
@@ -61,7 +66,7 @@ func (l *lruCache) Get(key interface{}) (interface{}, error) {
 		return nil, ErrNotFound
 	}
 	l.queue.MoveToFront(value)
-	return value.Value, nil
+	return value.Value.(*Node).Value, nil
 }
 
 func (l *lruCache) Remove(key interface{}) error {
@@ -73,6 +78,7 @@ func (l *lruCache) Remove(key interface{}) error {
 	}
 	delete(l.storage, key)
 	l.queue.Remove(value)
+	l.capacity -= 1
 	return nil
 }
 
@@ -89,4 +95,5 @@ func (l *lruCache) Clear() {
 		delete(l.storage, k)
 	}
 	l.queue.Init()
+	l.capacity = 0
 }
