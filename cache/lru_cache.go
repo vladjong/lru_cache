@@ -3,6 +3,7 @@ package cache
 import (
 	"container/list"
 	"sync"
+	"time"
 )
 
 type Node struct {
@@ -96,4 +97,13 @@ func (l *lruCache) Clear() {
 	}
 	l.queue.Init()
 	l.capacity = 0
+}
+
+func (l *lruCache) AddWithTTL(key, value interface{}, ttl time.Duration) {
+	l.Add(key, value)
+	go func() {
+		time.Sleep(ttl)
+		l.Remove(key)
+	}()
+
 }

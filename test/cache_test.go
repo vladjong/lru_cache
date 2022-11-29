@@ -2,6 +2,7 @@ package test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/vladjong/lru_cache/cache"
@@ -35,7 +36,7 @@ func TestAsync(t *testing.T) {
 		}
 		lruCache.Clear()
 		_, err = lruCache.Get(key)
-		assert.Error(t, err, cache.ErrNotFound)
+		assert.Error(t, cache.ErrNotFound, err)
 	})
 	t.Run("no data races", func(t *testing.T) {
 		t.Parallel()
@@ -63,4 +64,16 @@ func Test_Cap(t *testing.T) {
 	cache.Add("test", 1)
 
 	assert.Equal(t, 1, cache.Cap())
+}
+
+func Test_Ttl(t *testing.T) {
+	c := cache.New(5)
+	c.AddWithTTL("test", 1, 10000000000)
+	time.Sleep(time.Microsecond * 1)
+	val, err := c.Get("test")
+	assert.Nil(t, err)
+	assert.Equal(t, 1, val)
+	time.Sleep(time.Second * 3)
+	_, err = c.Get("test")
+	assert.Error(t, cache.ErrNotFound, err)
 }

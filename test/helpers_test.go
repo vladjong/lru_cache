@@ -10,6 +10,8 @@ import (
 	"github.com/vladjong/lru_cache/cache"
 )
 
+const TimeTtl = 100_000_000
+
 func emulatedLoad(t *testing.T, c cache.ICache, parallelFactor int) {
 	wg := sync.WaitGroup{}
 	for i := 0; i < parallelFactor; i++ {
@@ -38,6 +40,16 @@ func emulatedLoad(t *testing.T, c cache.ICache, parallelFactor int) {
 			}
 			wg.Done()
 		}(key)
+		wg.Add(1)
+		go func(k, v string) {
+			c.AddWithTTL(k, value, TimeTtl)
+			storedValue, err := c.Get(key)
+			if !errors.Is(err, cache.ErrNotFound) {
+				assert.Equal(t, v, storedValue)
+				assert.NoError(t, err)
+			}
+			wg.Done()
+		}(key, value)
 	}
 	wg.Wait()
 }
