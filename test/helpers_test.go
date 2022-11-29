@@ -14,7 +14,7 @@ func emulatedLoad(t *testing.T, c cache.ICache, parallelFactor int) {
 	wg := sync.WaitGroup{}
 	for i := 0; i < parallelFactor; i++ {
 		key := fmt.Sprintf("%d-key", i)
-		value := cache.NewNode(key, i)
+		value := fmt.Sprintf("%d-val", i)
 		wg.Add(1)
 		go func(k string) {
 			err := c.Add(k, value)
@@ -22,10 +22,11 @@ func emulatedLoad(t *testing.T, c cache.ICache, parallelFactor int) {
 			wg.Done()
 		}(key)
 		wg.Add(1)
-		go func(k string, v *cache.Node) {
+		go func(k, v string) {
 			storedValue, err := c.Get(k)
 			if !errors.Is(err, cache.ErrNotFound) {
-				assert.Equal(t, v, storedValue.(*cache.Node).Value)
+				assert.Equal(t, v, storedValue)
+				assert.NoError(t, err)
 			}
 			wg.Done()
 		}(key, value)
@@ -37,12 +38,6 @@ func emulatedLoad(t *testing.T, c cache.ICache, parallelFactor int) {
 			}
 			wg.Done()
 		}(key)
-		wg.Add(1)
-		go func() {
-			cap := c.Cap()
-			assert.Equal(t, 10, cap)
-			wg.Done()
-		}()
 	}
 	wg.Wait()
 }
